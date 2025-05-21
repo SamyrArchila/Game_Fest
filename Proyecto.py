@@ -19,8 +19,6 @@ clock = pygame.time.Clock()
 pygame.mixer.music.load("sounds/menu-o-creditos.ogg")
 pygame.mixer.music.play(-1, 0.0)
 
-# Sonido jumpscare
-sonido_jumpscare = pygame.mixer.Sound("sounds/TralaleloJumpscare.ogg")
 
 # Imágenes
 oficina = pygame.image.load("img/Oficina_normal.png").convert_alpha()

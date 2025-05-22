@@ -15,15 +15,18 @@ ventana = pygame.display.set_mode((1365, 780))
 pygame.display.set_caption("cinco noches con los brainrots")
 clock = pygame.time.Clock()
 
-# Música
+# Música de fondo
 pygame.mixer.music.load("sounds/menu-o-creditos.ogg")
 pygame.mixer.music.play(-1, 0.0)
+
+# Sonido de jumpscare
+sonido_jumpscare = pygame.mixer.Sound("sounds/jumpscare.ogg")
 
 # Imágenes
 oficina = pygame.image.load("img/Oficina_normal.png").convert_alpha()
 oficina = pygame.transform.scale(oficina, (1365, 780))
 
-# Cargar cada imagen del personaje (aparición progresiva)
+# Cargar frames del personaje
 personaje_frames = [
     pygame.transform.scale(pygame.image.load("img/Oficina_Tralalelo_1_V2.png").convert_alpha(), (1365, 780)),
     pygame.transform.scale(pygame.image.load("img/Oficina_Tralalelo_2_v2.png").convert_alpha(), (1365, 780)),
@@ -31,7 +34,7 @@ personaje_frames = [
     pygame.transform.scale(pygame.image.load("img/Oficina_Tralalelo_4_V2.png").convert_alpha(), (1365, 780)),
 ]
 
-# Imágenes de jumpscare final (pantalla completa)
+# Frames de jumpscare
 jumpscare_frames = [
     pygame.transform.scale(pygame.image.load("img/Tralalelo_jumpscare.png").convert_alpha(), (1365, 780)),
     pygame.transform.scale(pygame.image.load("img/tralalero_jumpscare2.png").convert_alpha(), (1365, 780)),
@@ -80,25 +83,23 @@ puerta_animando = False
 puerta_fotograma_actual = -1
 animacion_inversa = False
 tiempo_ultimo_fotograma = 0
-intervalo_fotograma = 500 # ms
+intervalo_fotograma = 500
 
 # Aparición del personaje enemigo
-tiempo_entre_apariciones = 10000 # cada 10 segundos
-duracion_aparicion = 3000 # aparece durante 3 segundos
+tiempo_entre_apariciones = 10000
+duracion_aparicion = 3000
 tiempo_ultima_aparicion = 0
 mostrar_personaje = False
 frame_personaje_actual = 0
 tiempo_ultimo_frame_personaje = 0
-intervalo_frame_personaje = 500 # ms entre frames de animación personaje
-tiempo_inicio_aparicion = 0 # Nuevo temporizador para la aparición
+intervalo_frame_personaje = 500
+tiempo_inicio_aparicion = 0
 
-# Control para evitar múltiples jumpscares por una misma aparición
+# Control jumpscare
 jumpscare_activado_por_aparicion = False
-
-# Jumpscare activado (al perder)
 jumpscare_activo = False
 jumpscare_tiempo_inicio = 0
-duracion_jumpscare = 3000 # ms jumpscare total
+duracion_jumpscare = 3000
 jumpscare_temblor_intensidad = 15
 frame_jumpscare_actual = 0
 tiempo_ultimo_frame_jumpscare = 0
@@ -141,7 +142,7 @@ while True:
                 mostrar_personaje = False
                 jumpscare_activo = False
                 jumpscare_activado_por_aparicion = False
-                tiempo_inicio_aparicion = 0 # Inicializar el temporizador
+                tiempo_inicio_aparicion = 0
                 pygame.mixer.music.stop()
 
         if pantalla == "noche_1" and event.type == pygame.MOUSEBUTTONDOWN:
@@ -188,11 +189,9 @@ while True:
             if tiempo_actual - tiempo_hora_inicio > 3000:
                 mostrar_hora = False
         else:
-            # Jumpscare
             if jumpscare_activo:
                 tiempo_jumpscare = tiempo_actual - jumpscare_tiempo_inicio
 
-                # Cambiar frames jumpscare cada intervalo
                 if tiempo_actual - tiempo_ultimo_frame_jumpscare >= intervalo_frame_jumpscare:
                     tiempo_ultimo_frame_jumpscare = tiempo_actual
                     frame_jumpscare_actual += 1
@@ -213,7 +212,6 @@ while True:
 
             ventana.blit(oficina, (0, 0))
 
-            # Animación puerta
             if puerta_animando:
                 if animacion_inversa:
                     if tiempo_actual - tiempo_ultimo_fotograma >= intervalo_fotograma:
@@ -233,33 +231,28 @@ while True:
             elif not puerta_abierta:
                 ventana.blit(puerta_fotogramas[-1], (0, 0))
 
-            # Aparición personaje enemigo (animado con frames)
             if not mostrar_personaje and tiempo_actual - tiempo_ultima_aparicion >= tiempo_entre_apariciones:
                 mostrar_personaje = True
                 tiempo_ultima_aparicion = tiempo_actual
                 frame_personaje_actual = 0
                 tiempo_ultimo_frame_personaje = tiempo_actual
                 jumpscare_activado_por_aparicion = False
-                tiempo_inicio_aparicion = tiempo_actual # Registrar el tiempo de inicio de la aparición
+                tiempo_inicio_aparicion = tiempo_actual
 
-            # SOLO DIBUJAR AL PERSONAJE SI LA PUERTA ESTÁ ABIERTA
             if mostrar_personaje and puerta_abierta:
-                # Cambia frame cada intervalo_frame_personaje ms
                 if tiempo_actual - tiempo_ultimo_frame_personaje >= intervalo_frame_personaje:
                     tiempo_ultimo_frame_personaje = tiempo_actual
                     frame_personaje_actual += 1
                     if frame_personaje_actual >= len(personaje_frames):
-                        frame_personaje_actual = len(personaje_frames) - 1 # Mantener último frame visible
+                        frame_personaje_actual = len(personaje_frames) - 1
 
                 ventana.blit(personaje_frames[frame_personaje_actual], (0, 0))
 
-                # Ocultar personaje tras duracion_aparicion
                 if tiempo_actual - tiempo_ultima_aparicion >= duracion_aparicion:
                     mostrar_personaje = False
-                    jumpscare_activado_por_aparicion = False # Resetear al acabar aparición
-                    tiempo_inicio_aparicion = 0 # Resetear el temporizador de aparición
+                    jumpscare_activado_por_aparicion = False
+                    tiempo_inicio_aparicion = 0
 
-                # NUEVA CONDICIÓN PARA EL JUMPSCARE (con temporizador)
                 tiempo_visible = tiempo_actual - tiempo_inicio_aparicion
                 if puerta_abierta and mostrar_personaje and tiempo_visible > 500 and not jumpscare_activo and not jumpscare_activado_por_aparicion:
                     jumpscare_activo = True
@@ -268,12 +261,11 @@ while True:
                     tiempo_ultimo_frame_jumpscare = tiempo_actual
                     mostrar_personaje = False
                     jumpscare_activado_por_aparicion = True
+                    sonido_jumpscare.play()
 
-            # Simulación avance de hora
             if tiempo_actual - inicio_noche >= tiempo_por_hora:
                 hora_actual += 1
                 inicio_noche = tiempo_actual
-                # Cuando llega a las 6 AM, activar jumpscare (pierdes)
                 if hora_actual >= 6:
                     jumpscare_activo = True
                     jumpscare_tiempo_inicio = tiempo_actual
@@ -282,6 +274,8 @@ while True:
 
     pygame.display.flip()
     clock.tick(60)
+
+
 
 
 

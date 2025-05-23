@@ -1,6 +1,6 @@
-import pygame
 import sys
 import random
+import pygame
 
 # Colores
 negro = (0, 0, 0)
@@ -20,13 +20,25 @@ pygame.mixer.music.load("sounds/menu-o-creditos.ogg")
 pygame.mixer.music.play(-1, 0.0)
 
 # Sonido de jumpscare
-sonido_jumpscare = pygame.mixer.Sound("sounds/jumpscare.ogg")
+sonido_jumpscare = pygame.mixer.Sound("sounds/audio1.ogg")
 
-# Imágenes
-oficina = pygame.image.load("img/Oficina_normal.png").convert_alpha()
-oficina = pygame.transform.scale(oficina, (1365, 780))
+# Imágenes principales
+oficina = pygame.transform.scale(pygame.image.load("img/Oficina_normal.png").convert_alpha(), (1365, 780))
 
-# Cargar frames del personaje
+oficina = pygame.transform.scale(pygame.image.load("img/Puerta_derecha_4.png").convert_alpha(), (1365, 780))
+# Puerta derecha (frames de animación)
+puerta_derecha_fotogramas = [
+    pygame.transform.scale(pygame.image.load(f"img/Puerta_derecha_{i+1}.png").convert_alpha(), (1365, 780))
+    for i in range(4)
+]
+
+# Imágenes de interferencia (se alternarán tras el jumpscare)
+interferencias = [
+    pygame.transform.scale(pygame.image.load("img/interferencia_1.png").convert_alpha(), (1365, 780)),
+    pygame.transform.scale(pygame.image.load("img/interferencia_2.png").convert_alpha(), (1365, 780))
+]
+
+# Cargar frames del personaje enemigo
 personaje_frames = [
     pygame.transform.scale(pygame.image.load("img/Oficina_Tralalelo_1_V2.png").convert_alpha(), (1365, 780)),
     pygame.transform.scale(pygame.image.load("img/Oficina_Tralalelo_2_v2.png").convert_alpha(), (1365, 780)),
@@ -47,29 +59,32 @@ puerta_fotogramas = [
     for i in range(4)
 ]
 
-boton = pygame.Rect(260, 250, 60, 60)
-
+# Fuente
 fuente_titulo = pygame.font.SysFont("OCR A Extended", 60, bold=True)
 fuente_texto = pygame.font.SysFont("Courier New", 24, bold=True)
 fuente_noche = pygame.font.SysFont("OCR A Extended", 50, bold=True)
 
+# Pantalla advertencia
 texto_titulo = fuente_titulo.render("⚠ ¡ADVERTENCIA! ⚠", True, rojo_intenso)
-texto_advertencia = fuente_texto.render(
-    "Este juego contiene luces parpadeantes, ruidos fuertes y muchos sustos repentinos",
-    True, blanco
-)
-
+texto_advertencia = fuente_texto.render("Este juego contiene luces parpadeantes, ruidos fuertes y muchos sustos repentinos", True, blanco)
 titulo_surf = texto_titulo.convert_alpha()
 advertencia_surf = texto_advertencia.convert_alpha()
 titulo_rect = titulo_surf.get_rect(center=(1365 // 2 - 30, 300))
 advertencia_rect = advertencia_surf.get_rect(center=(1365 // 2, 370))
 
+# Botones del menú
+botones = {
+    "Nuevo Juego": pygame.Rect(100, ventana.get_height() // 2 - 100, 200, 50),
+    "Continuar": pygame.Rect(100, ventana.get_height() // 2, 200, 50),
+    "Extras": pygame.Rect(100, ventana.get_height() // 2 + 100, 200, 50)
+}
+
+# Estado
+pantalla = "advertencia"
 alpha = 0
 velocidad_fade = 2
 tiempo_espera = 3
 tiempo_transcurrido = 0
-
-pantalla = "advertencia"
 mostrar_hora = False
 tiempo_hora_inicio = 0
 inicio_noche = 0
@@ -77,15 +92,16 @@ hora_actual = 0
 tiempo_por_hora = 60000
 energia = 100
 
-# Animación puerta
+# Puerta
 puerta_abierta = True
 puerta_animando = False
 puerta_fotograma_actual = -1
 animacion_inversa = False
 tiempo_ultimo_fotograma = 0
 intervalo_fotograma = 500
+boton = pygame.Rect(260, 250, 60, 60)
 
-# Aparición del personaje enemigo
+# Personaje enemigo
 tiempo_entre_apariciones = 10000
 duracion_aparicion = 3000
 tiempo_ultima_aparicion = 0
@@ -95,7 +111,7 @@ tiempo_ultimo_frame_personaje = 0
 intervalo_frame_personaje = 500
 tiempo_inicio_aparicion = 0
 
-# Control jumpscare
+# Jumpscare
 jumpscare_activado_por_aparicion = False
 jumpscare_activo = False
 jumpscare_tiempo_inicio = 0
@@ -105,19 +121,13 @@ frame_jumpscare_actual = 0
 tiempo_ultimo_frame_jumpscare = 0
 intervalo_frame_jumpscare = 500
 
-botones = {
-    "Nuevo Juego": pygame.Rect(100, ventana.get_height() // 2 - 100, 200, 50),
-    "Continuar": pygame.Rect(100, ventana.get_height() // 2, 200, 50),
-    "Extras": pygame.Rect(100, ventana.get_height() // 2 + 100, 200, 50)
-}
+TIEMPO_MINIMO_PUERTA_ABIERTA = 1000
 
 def dibujar_botones():
     for texto, rect in botones.items():
         texto_boton = fuente_texto.render(texto, True, blanco)
-        ventana.blit(texto_boton, (
-            rect.x + (rect.width - texto_boton.get_width()) // 2,
-            rect.y + (rect.height - texto_boton.get_height()) // 2
-        ))
+        ventana.blit(texto_boton, (rect.x + (rect.width - texto_boton.get_width()) // 2,
+                                   rect.y + (rect.height - texto_boton.get_height()) // 2))
 
 def aplicar_temblor(surface, intensidad):
     offset_x = random.randint(-intensidad, intensidad)
@@ -141,8 +151,6 @@ while True:
                 tiempo_ultima_aparicion = tiempo_actual
                 mostrar_personaje = False
                 jumpscare_activo = False
-                jumpscare_activado_por_aparicion = False
-                tiempo_inicio_aparicion = 0
                 pygame.mixer.music.stop()
 
         if pantalla == "noche_1" and event.type == pygame.MOUSEBUTTONDOWN:
@@ -153,6 +161,7 @@ while True:
                 if puerta_abierta:
                     puerta_fotograma_actual = len(puerta_fotogramas) - 1
                     animacion_inversa = True
+                    tiempo_apertura_puerta = tiempo_actual
                 else:
                     puerta_fotograma_actual = 0
                     animacion_inversa = False
@@ -165,27 +174,22 @@ while True:
             alpha = min(alpha, 255)
             titulo_surf.set_alpha(alpha)
             advertencia_surf.set_alpha(alpha)
-
         ventana.blit(titulo_surf, titulo_rect)
         ventana.blit(advertencia_surf, advertencia_rect)
-
         if alpha == 255:
             tiempo_transcurrido += 1 / 60
             if tiempo_transcurrido >= tiempo_espera:
                 pantalla = "menu"
 
     elif pantalla == "menu":
-        titulo_menu = fuente_titulo.render("cinco noches con los brainrots", True, rojo_intenso)
-        ventana.blit(titulo_menu, (20, 20))
+        ventana.blit(fuente_titulo.render("cinco noches con los brainrots", True, rojo_intenso), (20, 20))
         dibujar_botones()
 
     elif pantalla == "noche_1":
         if mostrar_hora:
             ventana.fill(negro)
             texto_noche = fuente_noche.render("12 AM - 1 Noche", True, blanco)
-            rect_noche = texto_noche.get_rect(center=(1365 // 2, 780 // 2))
-            ventana.blit(texto_noche, rect_noche)
-
+            ventana.blit(texto_noche, texto_noche.get_rect(center=(1365 // 2, 780 // 2)))
             if tiempo_actual - tiempo_hora_inicio > 3000:
                 mostrar_hora = False
         else:
@@ -200,10 +204,12 @@ while True:
 
                 if tiempo_jumpscare <= duracion_jumpscare:
                     aplicar_temblor(jumpscare_frames[frame_jumpscare_actual], jumpscare_temblor_intensidad)
+                elif tiempo_jumpscare <= duracion_jumpscare + 2000:
+                    frame_interferencia = (tiempo_actual // 100) % len(interferencias)
+                    ventana.blit(interferencias[frame_interferencia], (0, 0))
                 else:
                     pantalla = "menu"
                     jumpscare_activo = False
-                    jumpscare_activado_por_aparicion = False
                     pygame.mixer.music.play(-1, 0.0)
 
                 pygame.display.flip()
@@ -213,15 +219,13 @@ while True:
             ventana.blit(oficina, (0, 0))
 
             if puerta_animando:
-                if animacion_inversa:
-                    if tiempo_actual - tiempo_ultimo_fotograma >= intervalo_fotograma:
-                        tiempo_ultimo_fotograma = tiempo_actual
+                if tiempo_actual - tiempo_ultimo_fotograma >= intervalo_fotograma:
+                    tiempo_ultimo_fotograma = tiempo_actual
+                    if animacion_inversa:
                         puerta_fotograma_actual -= 1
                         if puerta_fotograma_actual < 0:
                             puerta_animando = False
-                else:
-                    if tiempo_actual - tiempo_ultimo_fotograma >= intervalo_fotograma:
-                        tiempo_ultimo_fotograma = tiempo_actual
+                    else:
                         puerta_fotograma_actual += 1
                         if puerta_fotograma_actual >= len(puerta_fotogramas):
                             puerta_animando = False
@@ -236,31 +240,28 @@ while True:
                 tiempo_ultima_aparicion = tiempo_actual
                 frame_personaje_actual = 0
                 tiempo_ultimo_frame_personaje = tiempo_actual
-                jumpscare_activado_por_aparicion = False
                 tiempo_inicio_aparicion = tiempo_actual
 
-            if mostrar_personaje and puerta_abierta:
+            if mostrar_personaje:
                 if tiempo_actual - tiempo_ultimo_frame_personaje >= intervalo_frame_personaje:
                     tiempo_ultimo_frame_personaje = tiempo_actual
                     frame_personaje_actual += 1
                     if frame_personaje_actual >= len(personaje_frames):
                         frame_personaje_actual = len(personaje_frames) - 1
 
-                ventana.blit(personaje_frames[frame_personaje_actual], (0, 0))
+                if puerta_abierta:
+                    ventana.blit(personaje_frames[frame_personaje_actual], (0, 0))
 
-                if tiempo_actual - tiempo_ultima_aparicion >= duracion_aparicion:
+                if tiempo_actual - tiempo_inicio_aparicion >= duracion_aparicion:
                     mostrar_personaje = False
-                    jumpscare_activado_por_aparicion = False
-                    tiempo_inicio_aparicion = 0
 
-                tiempo_visible = tiempo_actual - tiempo_inicio_aparicion
-                if puerta_abierta and mostrar_personaje and tiempo_visible > 500 and not jumpscare_activo and not jumpscare_activado_por_aparicion:
+                tiempo_desde_apertura = tiempo_actual - (tiempo_apertura_puerta if 'tiempo_apertura_puerta' in locals() else 0)
+                if puerta_abierta and tiempo_desde_apertura > TIEMPO_MINIMO_PUERTA_ABIERTA and tiempo_actual - tiempo_inicio_aparicion > 500 and not jumpscare_activo:
                     jumpscare_activo = True
                     jumpscare_tiempo_inicio = tiempo_actual
                     frame_jumpscare_actual = 0
                     tiempo_ultimo_frame_jumpscare = tiempo_actual
                     mostrar_personaje = False
-                    jumpscare_activado_por_aparicion = True
                     sonido_jumpscare.play()
 
             if tiempo_actual - inicio_noche >= tiempo_por_hora:
@@ -274,6 +275,9 @@ while True:
 
     pygame.display.flip()
     clock.tick(60)
+
+
+
 
 
 

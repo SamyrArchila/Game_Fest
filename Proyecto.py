@@ -15,9 +15,9 @@ ventana = pygame.display.set_mode((1365, 780))
 pygame.display.set_caption("cinco noches con los brainrots")
 clock = pygame.time.Clock()
 
-# Musica de fondo
+# Música
 pygame.mixer.music.load("sounds/menu-o-creditos.ogg")
-pygame.mixer.music.play(-1, 0.0)
+pygame.mixer.music.play(-1)
 
 # Sonido jumpscare
 sonido_jumpscare = pygame.mixer.Sound("sounds/jumpscare.ogg")
@@ -25,14 +25,19 @@ sonido_jumpscare = pygame.mixer.Sound("sounds/jumpscare.ogg")
 # Oficina
 oficina = pygame.transform.scale(pygame.image.load("img/Oficina_normal.png").convert_alpha(), (1365, 780))
 
-# Puerta derecha animada y cerrada
+# Puertas
+puerta_fotogramas = [
+    pygame.transform.scale(pygame.image.load(f"img/Puerta_izquierda_{i+1}.png").convert_alpha(), (1365, 780))
+    for i in range(4)
+]
+
 puerta_derecha_fotogramas = [
     pygame.transform.scale(pygame.image.load(f"img/Puerta_derecha_{i+1}.png").convert_alpha(), (1365, 780))
     for i in range(4)
 ]
-puerta_derecha_cerrada = pygame.transform.scale(
-    pygame.image.load("img/Oficina_cerrada.png").convert_alpha(), (1365, 780)
-)
+
+# Oficina cerrada
+puerta_derecha_cerrada = pygame.transform.scale(pygame.image.load("img/Oficina_cerrada.png").convert_alpha(), (1365, 780))
 
 # Interferencias
 interferencias = [
@@ -40,7 +45,7 @@ interferencias = [
     pygame.transform.scale(pygame.image.load("img/interferencia_2.png").convert_alpha(), (1365, 780))
 ]
 
-# Enemigo
+# Personaje
 personaje_frames = [
     pygame.transform.scale(pygame.image.load("img/Oficina_Tralalelo_1_V2.png").convert_alpha(), (1365, 780)),
     pygame.transform.scale(pygame.image.load("img/Oficina_Tralalelo_2_v2.png").convert_alpha(), (1365, 780)),
@@ -52,13 +57,7 @@ personaje_frames = [
 jumpscare_frames = [
     pygame.transform.scale(pygame.image.load("img/Tralalelo_jumpscare.png").convert_alpha(), (1365, 780)),
     pygame.transform.scale(pygame.image.load("img/tralalero_jumpscare2.png").convert_alpha(), (1365, 780)),
-    pygame.transform.scale(pygame.image.load("img/tralalerojumpscare3}.png").convert_alpha(), (1365, 780))
-]
-
-# Puerta izquierda
-puerta_fotogramas = [
-    pygame.transform.scale(pygame.image.load(f"img/Puerta_izquierda_{i+1}.png").convert_alpha(), (1365, 780))
-    for i in range(4)
+    pygame.transform.scale(pygame.image.load("img/tralalerojumpscare3}.png").convert_alpha(), (1365, 780)),
 ]
 
 # Fuente
@@ -66,7 +65,7 @@ fuente_titulo = pygame.font.SysFont("OCR A Extended", 60, bold=True)
 fuente_texto = pygame.font.SysFont("Courier New", 24, bold=True)
 fuente_noche = pygame.font.SysFont("OCR A Extended", 50, bold=True)
 
-# Pantalla advertencia
+# Advertencia
 texto_titulo = fuente_titulo.render("⚠ ¡ADVERTENCIA! ⚠", True, rojo_intenso)
 texto_advertencia = fuente_texto.render("Este juego contiene luces parpadeantes, ruidos fuertes y muchos sustos repentinos", True, blanco)
 titulo_surf = texto_titulo.convert_alpha()
@@ -74,14 +73,14 @@ advertencia_surf = texto_advertencia.convert_alpha()
 titulo_rect = titulo_surf.get_rect(center=(1365 // 2 - 30, 300))
 advertencia_rect = advertencia_surf.get_rect(center=(1365 // 2, 370))
 
-# Botones menu
+# Botones
 botones = {
     "Nuevo Juego": pygame.Rect(100, ventana.get_height() // 2 - 100, 200, 50),
     "Continuar": pygame.Rect(100, ventana.get_height() // 2, 200, 50),
     "Extras": pygame.Rect(100, ventana.get_height() // 2 + 100, 200, 50)
 }
 
-# Estado inicial
+# Estado del juego
 pantalla = "advertencia"
 alpha = 0
 velocidad_fade = 2
@@ -91,34 +90,32 @@ mostrar_hora = False
 tiempo_hora_inicio = 0
 inicio_noche = 0
 hora_actual = 0
-hora_mostrada = True
 tiempo_por_hora = 60000
 energia = 100
 
-# Puerta izquierda
+# Datos puertas
 datos_puerta = {
-    "abierta": False,
+    "abierta": True,
     "animando": False,
     "fotograma": 0,
     "inversa": False,
     "ultimo": 0,
-    "intervalo": 500,
+    "intervalo": 200,
     "boton": pygame.Rect(260, 250, 60, 60),
     "apertura": 0
 }
 
-# Puerta derecha
 datos_derecha = {
-    "abierta": False,
+    "abierta": True,
     "animando": False,
     "fotograma": 0,
     "inversa": False,
     "ultimo": 0,
-    "intervalo": 500,
+    "intervalo": 200,
     "boton": pygame.Rect(1045, 250, 60, 60)
 }
 
-# Enemigo
+# Enemigo y jumpscare
 TIEMPO_MINIMO_PUERTA_ABIERTA = 1000
 t_i_a = 10000
 d_a = 3000
@@ -129,7 +126,6 @@ t_u_f_p = 0
 i_f_p = 500
 t_i_aparicion = 0
 
-# Jumpscare
 jumpscare_activo = False
 j_t_i = 0
 d_j = 3000
@@ -138,6 +134,7 @@ f_j_c = 0
 t_u_f_j = 0
 i_f_j = 500
 
+# Funciones auxiliares
 def aplicar_temblor(surf, intensidad):
     x = random.randint(-intensidad, intensidad)
     y = random.randint(-intensidad, intensidad)
@@ -155,6 +152,7 @@ def dibujar_botones():
     for texto, rect in botones.items():
         ventana.blit(fuente_texto.render(texto, True, blanco), rect.topleft)
 
+# Loop principal
 while True:
     t_a = pygame.time.get_ticks()
 
@@ -182,7 +180,7 @@ while True:
                     datos["abierta"] = not datos["abierta"]
                     datos["animando"] = True
                     datos["ultimo"] = t_a
-                    datos["fotograma"] = 0 if datos["abierta"] else len(frames) - 1
+                    datos["fotograma"] = 0
                     datos["inversa"] = not datos["abierta"]
                     if datos is datos_puerta:
                         datos["apertura"] = t_a
@@ -230,31 +228,30 @@ while True:
 
             ventana.blit(oficina, (0, 0))
 
+            # Animación de puertas
             for datos, frames in zip((datos_puerta, datos_derecha), (puerta_fotogramas, puerta_derecha_fotogramas)):
                 if datos["animando"] and t_a - datos["ultimo"] >= datos["intervalo"]:
                     datos["ultimo"] = t_a
-                    if datos["inversa"]:
+                    if datos["inversa"]:  # Animar apertura (del 4 al 1)
                         datos["fotograma"] -= 1
                         if datos["fotograma"] < 0:
                             datos["animando"] = False
-                    else:
-                        datos["fotograma"] += 1
-                        if datos["fotograma"] >= len(frames):
-                            datos["animando"] = False
-
-            # Dibujar puertas después del fondo
+                            datos["fotograma"] = -1
+                    else:  # Animar cierre (del 1 al 4)
+                     datos["fotograma"] += 1
+                    if datos["fotograma"] >= len(frames):
+                        datos["animando"] = False
+                        datos["fotograma"] = len(frames) - 1
+            # Dibujar puertas
             for datos, frames in zip((datos_puerta, datos_derecha), (puerta_fotogramas, puerta_derecha_fotogramas)):
-                if 0 <= datos["fotograma"] < len(frames):
-                    ventana.blit(frames[datos["fotograma"]], (0, 0))
-                elif not datos["abierta"] and not datos["animando"]:
-                    if datos is datos_derecha:
-                        ventana.blit(puerta_derecha_cerrada, (0, 0))
-                    else:
-                        ventana.blit(puerta_fotogramas[-1], (0, 0))
+                if datos["animando"]:
+                    if 0 <= datos["fotograma"] < len(frames):
+                        ventana.blit(frames[datos["fotograma"]], (0, 0))
+                elif not datos["abierta"]:  # Puerta cerrada (mostrar último frame)
+                    ventana.blit(frames[-1], (0, 0))
 
-            # Dibujo de botones encima
-            pygame.draw.rect(ventana, rojo_intenso if datos_puerta["abierta"] else verde, datos_puerta["boton"])
-            pygame.draw.rect(ventana, rojo_intenso if datos_derecha["abierta"] else verde, datos_derecha["boton"])
+            pygame.draw.rect(ventana, rojo_intenso if not datos_puerta["abierta"] else verde, datos_puerta["boton"])
+            pygame.draw.rect(ventana, rojo_intenso if not datos_derecha["abierta"] else verde, datos_derecha["boton"])
 
             texto_hora = fuente_noche.render(f"{hora_actual + 12 if hora_actual == 0 else hora_actual}:00 AM", True, blanco)
             ventana.blit(texto_hora, (ventana.get_width() - 250, 720))
@@ -285,16 +282,8 @@ while True:
             puerta_izq_abierta = datos_puerta["abierta"] or datos_puerta["animando"]
             puerta_der_abierta = datos_derecha["abierta"] or datos_derecha["animando"]
 
-            if puerta_izq_abierta and puerta_der_abierta:
-                consumo = 0
-            elif puerta_izq_abierta or puerta_der_abierta:
-                consumo = 0.02
-            else:
-                consumo = 0.04
-
-            energia -= consumo
-            energia = max(0, energia)
-
+            consumo = 0 if puerta_izq_abierta and puerta_der_abierta else 0.02 if puerta_izq_abierta or puerta_der_abierta else 0.04
+            energia = max(0, energia - consumo)
             dibujar_barra_bateria()
 
             if energia <= 0 and not jumpscare_activo:
@@ -313,6 +302,7 @@ while True:
 
     pygame.display.flip()
     clock.tick(60)
+
 
 
 

@@ -99,7 +99,7 @@ energia = 100
 datos_puerta = {
     "abierta": False,
     "animando": False,
-    "fotograma": -1,
+    "fotograma": 0,
     "inversa": False,
     "ultimo": 0,
     "intervalo": 500,
@@ -111,7 +111,7 @@ datos_puerta = {
 datos_derecha = {
     "abierta": False,
     "animando": False,
-    "fotograma": -1,
+    "fotograma": 0,
     "inversa": False,
     "ultimo": 0,
     "intervalo": 500,
@@ -138,7 +138,6 @@ f_j_c = 0
 t_u_f_j = 0
 i_f_j = 500
 
-# Funciones
 def aplicar_temblor(surf, intensidad):
     x = random.randint(-intensidad, intensidad)
     y = random.randint(-intensidad, intensidad)
@@ -156,7 +155,6 @@ def dibujar_botones():
     for texto, rect in botones.items():
         ventana.blit(fuente_texto.render(texto, True, blanco), rect.topleft)
 
-# Loop principal
 while True:
     t_a = pygame.time.get_ticks()
 
@@ -184,8 +182,8 @@ while True:
                     datos["abierta"] = not datos["abierta"]
                     datos["animando"] = True
                     datos["ultimo"] = t_a
-                    datos["fotograma"] = len(frames) - 1 if datos["abierta"] else 0
-                    datos["inversa"] = datos["abierta"]
+                    datos["fotograma"] = 0 if datos["abierta"] else len(frames) - 1
+                    datos["inversa"] = not datos["abierta"]
                     if datos is datos_puerta:
                         datos["apertura"] = t_a
 
@@ -243,6 +241,9 @@ while True:
                         datos["fotograma"] += 1
                         if datos["fotograma"] >= len(frames):
                             datos["animando"] = False
+
+            # Dibujar puertas después del fondo
+            for datos, frames in zip((datos_puerta, datos_derecha), (puerta_fotogramas, puerta_derecha_fotogramas)):
                 if 0 <= datos["fotograma"] < len(frames):
                     ventana.blit(frames[datos["fotograma"]], (0, 0))
                 elif not datos["abierta"] and not datos["animando"]:
@@ -251,7 +252,10 @@ while True:
                     else:
                         ventana.blit(puerta_fotogramas[-1], (0, 0))
 
-            # Mostrar hora actual en pantalla
+            # Dibujo de botones encima
+            pygame.draw.rect(ventana, rojo_intenso if datos_puerta["abierta"] else verde, datos_puerta["boton"])
+            pygame.draw.rect(ventana, rojo_intenso if datos_derecha["abierta"] else verde, datos_derecha["boton"])
+
             texto_hora = fuente_noche.render(f"{hora_actual + 12 if hora_actual == 0 else hora_actual}:00 AM", True, blanco)
             ventana.blit(texto_hora, (ventana.get_width() - 250, 720))
 
@@ -266,11 +270,11 @@ while True:
                 if t_a - t_u_f_p >= i_f_p:
                     t_u_f_p = t_a
                     frame_personaje_actual = min(frame_personaje_actual + 1, len(personaje_frames) - 1)
-                if datos_puerta["abierta"]:
+                if datos_puerta["abierta"] and not datos_puerta["animando"]:
                     ventana.blit(personaje_frames[frame_personaje_actual], (0, 0))
                 if t_a - t_i_aparicion >= d_a:
                     mostrar_personaje = False
-                if datos_puerta["abierta"] and (t_a - datos_puerta["apertura"] > TIEMPO_MINIMO_PUERTA_ABIERTA) and (t_a - t_i_aparicion > 500):
+                if datos_puerta["abierta"] and not datos_puerta["animando"] and (t_a - datos_puerta["apertura"] > TIEMPO_MINIMO_PUERTA_ABIERTA) and (t_a - t_i_aparicion > 500):
                     jumpscare_activo = True
                     j_t_i = t_a
                     f_j_c = 0
@@ -278,10 +282,6 @@ while True:
                     mostrar_personaje = False
                     sonido_jumpscare.play()
 
-            pygame.draw.rect(ventana, rojo_intenso if datos_puerta["abierta"] else verde, datos_puerta["boton"])
-            pygame.draw.rect(ventana, rojo_intenso if datos_derecha["abierta"] else verde, datos_derecha["boton"])
-
-            # Batería
             puerta_izq_abierta = datos_puerta["abierta"] or datos_puerta["animando"]
             puerta_der_abierta = datos_derecha["abierta"] or datos_derecha["animando"]
 
@@ -313,6 +313,7 @@ while True:
 
     pygame.display.flip()
     clock.tick(60)
+
 
 
 

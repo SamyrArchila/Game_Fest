@@ -29,7 +29,8 @@ sonido_jumpscare = pygame.mixer.Sound("sounds/jumpscare.ogg")
 imagen_sin_energia = pygame.transform.scale(
     pygame.image.load("img/tralalero tralala.png").convert_alpha(), (1365, 780)
 )
-musica_sin_energia = pygame.mixer.Sound("sounds/Fnaf-x-Tralalero-tralala-_tralalerotralala-_fnaf-_brainrotmemes_music.ogg")
+musica_sin_energia = pygame.mixer.Sound(os.path.join("sounds", "FNAF-1-Freddy-Jumpscare.ogg"))
+
 
 # Oficina
 oficina = pygame.transform.scale(pygame.image.load("img/Oficina_normal.png").convert_alpha(), (1365, 780))
@@ -285,7 +286,7 @@ while True:
                 pantalla = "menu"
 
     elif pantalla == "menu":
-        ventana.blit(fuente_titulo.render("cinco noches con los brainrots", True, rojo_intenso), (20, 20))
+        ventana.blit(fuente_titulo.render("SOBREVIVE LA NOCHE", True, rojo_intenso), (20, 20))
         dibujar_botones()
 
 # Mostrar logo a la derecha
@@ -428,15 +429,16 @@ while True:
             
             if energia_agotada and not jumpscare_activo:
                 ventana.blit(imagen_sin_energia, (0, 0))
+
+                # Esperar a que termine el audio antes de iniciar el jumpscare visual
                 if t_a - inicio_musica_sin_energia >= musica_sin_energia.get_length() * 1000:
-                    if tipo_jumpscare == "sahur":
-                        tipo_jumpscare = "tralalelo"
-                        tipo_jumpscare = "tralalelo"
+                    tipo_jumpscare = "tralalelo"  # Asegurar que sea el jumpscare correcto
                     jumpscare_activo = True
                     j_t_i = t_a
                     f_j_c = 0
                     t_u_f_j = t_a
-                    sonido_jumpscare.play()
+                    # NO reproducimos otro sonido aquí porque ya se oyó el largo
+
 
 
             if t_a - inicio_noche >= tiempo_por_hora:

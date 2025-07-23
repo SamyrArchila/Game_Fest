@@ -1,6 +1,6 @@
 # Game_Fest
 
-#  Cinco Noches con los Brainrots
+#  Sobrevive la noche
 
 > Un juego de terror inspirado en Five Nights at Freddy's, hecho con **Python 3** y **Pygame**.  
 > ¡Sobrevive a los Brainrots, gestiona las puertas y conserva tu energía antes de que sea demasiado tarde!
